@@ -311,7 +311,8 @@ class WindowsInstaller(Frame):
 					if '00.' in item or '01.' in item:
 						pass
 					else:
-						self.configFrame()
+						userTh = threading.Thread(target=self.userThread)
+						userTh.start()
 						self.DBCheck = False
 						break
 		except IndexError:
@@ -416,7 +417,7 @@ class WindowsInstaller(Frame):
 				self.buttonNext.config(state=NORMAL)
 				self.Percent.config(text='자바 설치 완료')
 				with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
 				self.javaFrame()
 			elif self.checkFrame == 1:
 				if self.javaCheck:
@@ -428,7 +429,7 @@ class WindowsInstaller(Frame):
 					self.buttonNext.config(state=NORMAL)
 					self.Percent.config(text='톰캣 설치 완료')
 					with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
+						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
 					self.tomcatFrame()
 				else:
 					self.installJavaCheck = messagebox.askyesno('설치', '자바가 설치되어 있지 않습니다.\n자바를 먼저 설치하시겠습니까?')
@@ -442,7 +443,7 @@ class WindowsInstaller(Frame):
 						self.buttonNext.config(state=NORMAL)
 						self.Percent.config(text='톰캣 설치 완료')
 						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
+							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
 						self.tomcatFrame()
 					else:
 						messagebox.showerror('실패', '톰캣을 설치하기 전 자바를 먼저 설치해 주세요.')
@@ -457,7 +458,7 @@ class WindowsInstaller(Frame):
 								warName = self.pathStr.get()
 							shutil.copy(warName, self.pathSave.get())
 							with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + warName.split('\\')[-1] + ']') + "%-20s" % 'war파일 복사.' + '\n')
+								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + warName.split('\\')[-1] + ']') + "%-20s" % 'war파일 복사.' + '\n')
 					self.Percent.config(text='war파일 복사 완료')
 				except FileNotFoundError:
 					messagebox.showerror('실패', '복사할 경로를 선택해 주세요.')
@@ -470,7 +471,7 @@ class WindowsInstaller(Frame):
 							shutil.copytree(file, self.pathSave.get()+'\\conf')
 							self.confCheck = True
 							with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[conf]') + "%-20s" % 'conf 복사.' + '\n')
+								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[conf]') + "%-20s" % 'conf 복사.' + '\n')
 					self.Percent.config(text='conf 복사 완료')
 				else:
 					messagebox.showerror('실패', '복사할 경로를 선택해 주세요.')
@@ -496,7 +497,7 @@ class WindowsInstaller(Frame):
 							if '00.' in sqlFile.split('\\')[-1] or '01.' in sqlFile.split('\\')[-1]:
 								logDB = subprocess.Popen('sqlplus '+self.user+'/'+self.password+'@'+self.host+':'+self.port+'/'+self.database+' < "'+sqlFile+'"', shell=True, stdout=subprocess.PIPE)
 							else:
-								logDB = subprocess.Popen('sqlplus '+self.dbuser+'/'+self.dbpw+'@'+self.host+':'+self.port+'/'+self.database+' < "'+sqlFile+'"', shell=True, stdout=subprocess.PIPE)
+								logDB = subprocess.Popen('sqlplus '+self.userID+'/'+self.userPW+'@'+self.host+':'+self.port+'/'+self.database+' < "'+sqlFile+'"', shell=True, stdout=subprocess.PIPE)
 							try:
 								count = 0
 								while True:
@@ -520,7 +521,7 @@ class WindowsInstaller(Frame):
 						elif self.comboDBMS.get() == 'MS-SQL':
 							subprocess.check_output('sqlcmd -S '+self.host+','+self.port+' -i "'+sqlFile+'" -U '+self.user+' -P '+self.password+' -d '+self.database)
 						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
+							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
 					self.logWindowFrame.lift()
 					self.buttonClose.config(state=NORMAL)
 					self.textLog.config(state=DISABLED)
@@ -532,12 +533,10 @@ class WindowsInstaller(Frame):
 						oneLine += msg
 						if msg != messageList:
 							oneLine += '\n'
-					if oneLine != '':
-						messagebox.showerror('실패', oneLine)
-					# if self.confCheck:
-					# 	self.configFrame()
 					if lineCount != 0:
 						logList.append(self.textLog.get('1.0', END))
+					if oneLine != '':
+						messagebox.showerror('실패', oneLine)
 					oneLog = str()
 					for log in logList:
 						oneLog += (log + '\n\n')
@@ -561,49 +560,32 @@ class WindowsInstaller(Frame):
 				self.progressState.stop()
 				messagebox.showerror('실패', '스크립트 파일 실행을 정상적으로 완료하지 못했습니다.\n다시 실행하려면 실행버튼을 눌러주세요.')
 				with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행 실패.' + '\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행 실패.' + '\n')
 			else:
 				messagebox.showerror('실패', '설치를 정상적으로 완료하지 못했습니다.\n다시 설치하려면 설치버튼을 눌러주세요.')
 				if self.checkFrame == 0:
 					with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치 실패.' + '\n')
+						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치 실패.' + '\n')
 				elif self.checkFrame == 1:
-					if self.installJavaCheck:
+					try:
+						if self.installJavaCheck:
+							with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
+								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[jdk-8u191-windows-x64.exe]') + "%-20s" % '자바 설치 실패.' + '\n')
 						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[jdk-8u191-windows-x64.exe]') + "%-20s" % '자바 설치 실패.' + '\n')
-					with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치 실패.' + '\n')
+							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치 실패.' + '\n')
+					except AttributeError:
+						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
+							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치 실패.' + '\n')
 
-	def configFrame(self):
-		self.confWindow = Toplevel()
-		self.confWindow.title('Conf')
-		self.confWindow.geometry('200x140+200+200')
-		self.confWindow.resizable(False, False)
-
-		frame_C1 = Frame(self.confWindow)
-		frame_C1.pack(fill=X, padx=10, pady=(10,0))
-		labelAddr = Label(frame_C1, text='USER')
-		labelAddr.pack(side=LEFT, padx=5, pady=10)
-		self.dbuserEntry = ttk.Entry(frame_C1, width=15)
-		self.dbuserEntry.pack(side=RIGHT, expand=False, padx=(0,5))
-
-	# User info.
-		frameC2 = Frame(self.confWindow)
-		frameC2.pack(fill=X, padx=10)
-		labelID = Label(frameC2, text='PW')
-		labelID.pack(side=LEFT, padx=5, pady=10)
-		self.dbpwEntry = ttk.Entry(frameC2, width=15)
-		self.dbpwEntry.pack(side=RIGHT, expand=False, padx=(0,5))
-
-	# Connect button.
-		frameC3 = Frame(self.confWindow)
-		frameC3.pack(fill=X, padx=10)
-		buttonConnectSave = ttk.Button(frameC3, text='입력 완료', width=21, command=self.configFunction)
-		buttonConnectSave.pack(side=RIGHT, padx=5)
-
-	def configFunction(self):
-		self.dbuser = self.dbuserEntry.get()
-		self.dbpw = self.dbpwEntry.get()
+	def userThread(self):
+		for item in self.filenames:
+			if '01.' in item:
+				with open(item, 'r') as f:
+					for line in f.readlines():
+						if 'CREATE USER' in line:
+							self.userID = line.splitlines()[0].split(' ')[-1]
+						if 'IDENTIFIED BY' in line:
+							self.userPW = line.splitlines()[0].split(' ')[-1]
 		if self.confCheck:
 			count = 0
 			stringFile = str()
@@ -614,13 +596,12 @@ class WindowsInstaller(Frame):
 					if not line: break
 					if count in [14, 15, 16, 17, 18, 19]:
 						if count == 14:
-							stringFile += 'dbtype=oracle\ndbaddr=' + self.host + '\ndbport=' + self.port + '\nsid=' + self.database + '\ndbuser=' + self.dbuser + '\ndbpwd=' + self.dbpw + '\n'
+							stringFile += 'dbtype=oracle\ndbaddr=' + self.host + '\ndbport=' + self.port + '\nsid=' + self.database + '\ndbuser=' + self.userID + '\ndbpwd=' + self.userPW + '\n'
 						continue
 					else:
 						stringFile += line
 			with open(self.pathSave.get()+'\\conf\\jdbc.conf', 'w', encoding='UTF8') as f:
 				f.write(stringFile)
-		self.confWindow.destroy()
 
 	def logWindow(self):
 		self.logWindowFrame = Toplevel()
@@ -644,7 +625,7 @@ class WindowsInstaller(Frame):
 	def mainLog(self):
 		logWindow = Toplevel()
 		logWindow.title('Log')
-		logWindow.geometry('900x400+200+200')
+		logWindow.geometry('1000x400+200+200')
 		logWindow.resizable(False, False)
 
 		frame_log = Frame(logWindow)
@@ -696,7 +677,7 @@ class LinuxInstaller():
 					except subprocess.CalledProcessError as e:
 						print('자바가 이미 설치되어 있습니다.')
 					with open(os.getcwd()+'/log/log.txt', 'a') as f:
-						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[/usr/local/' + fullpath.split('/')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
+						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[/usr/local/' + fullpath.split('/')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
 					self.Tomcat()
 		elif checkJava == 'N':
 			self.Tomcat()
@@ -730,7 +711,7 @@ class LinuxInstaller():
 						subprocess.check_call('rm -rf ' + os.path.join(os.getcwd(), 'apache-tomcat*'), shell=True)
 						print('톰캣이 이미 설치되어 있습니다.')
 					with open(os.getcwd()+'/log/log.txt', 'a') as f:
-						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[/usr/local/' + fullpath.split('/')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
+						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[/usr/local/' + fullpath.split('/')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
 					self.War()
 			except subprocess.CalledProcessError as e:
 				print('자바를 먼저 설치하세요.')
@@ -754,7 +735,7 @@ class LinuxInstaller():
 					if '.war' in file:
 						shutil.copy(os.path.join(os.getcwd()+'/pkg', file), '/usr/local/apache-tomcat-8.5.35/webapps')
 						with open(os.getcwd()+'/log/log.txt', 'a') as f:
-							f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[/usr/local/apache-tomcat-8.5.35/webapps/' + file + ']') + "%-20s" % 'war파일 복사.' + '\n')
+							f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[/usr/local/apache-tomcat-8.5.35/webapps/' + file + ']') + "%-20s" % 'war파일 복사.' + '\n')
 				self.Database()
 		elif checkWar == 'N':
 			self.Database()
@@ -785,7 +766,7 @@ class LinuxInstaller():
 						try:
 							subprocess.check_call('sqlplus '+user+'/'+password+'@'+host+':'+port+'/'+database+' < "'+sqlFile+'"', shell=True)
 							with open(os.getcwd()+'/log/log.txt', 'a') as f:
-								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + sqlFile + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
+								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + sqlFile + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
 						except subprocess.CalledProcessError as e:
 							print('파일명을 정확히 입력하세요.')
 					break
@@ -809,7 +790,7 @@ class LinuxInstaller():
 							elif checkDBMS == 'MSSQL':
 								subprocess.check_call('sqlcmd -S '+host+','+port+' -i "'+sqlFile+'" -U '+user+' -P '+password+' -d '+database)
 							with open(os.getcwd()+'/log/log.txt', 'a') as f:
-								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + sqlFile + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
+								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + sqlFile + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
 						except subprocess.CalledProcessError as e:
 							print('파일명을 정확히 입력하세요.')
 					break
