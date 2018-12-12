@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
+import tkinter.font
 import threading, collections, subprocess, os, sys, shutil, datetime, platform
 
 class WindowsInstaller(Frame):
@@ -13,6 +14,9 @@ class WindowsInstaller(Frame):
 
 		self.mainFrame = Frame(self)
 		self.mainFrame.pack(fill=BOTH, expand=True, padx=10, pady=10)
+		self.filenames = list()
+		self.search(os.path.join(os.getcwd(), 'pkg'))
+		self.confCheck = False
 
 		remainFrame = Frame(self)
 		remainFrame.pack(fill=X, anchor=S, padx=10, pady=(0,10))
@@ -20,13 +24,7 @@ class WindowsInstaller(Frame):
 		self.buttonInstall.pack(anchor=NE, padx=10, pady=(0,20))
 		self.Progress = ttk.Progressbar(remainFrame, orient=HORIZONTAL, mode='determinate')
 		self.Progress.pack(fill=X, anchor=S, padx=20)
-		self.filenames = os.listdir(os.getcwd()+'\\pkg')
-		cnt = 0
-		for file in self.filenames:
-			if '.sql' in file:
-				cnt += 1
-		self.Progress.config(maximum=4)
-		self.count = 0
+		self.Progress.config(maximum=5)
 		self.Percent = Label(remainFrame, width=20, text='')
 		self.Percent.pack(anchor=SE, padx=5)
 		self.buttonCancel = ttk.Button(remainFrame, text='취소', command=self.cancelFunction)
@@ -41,14 +39,7 @@ class WindowsInstaller(Frame):
 
 		self.labelMain = Label(self.mainFrame, text='자바 설치')
 		self.labelMain.pack(anchor=NW)
-		self.pathFrame = Frame(self.mainFrame)
-		self.pathFrame.pack(fill=X, anchor=N, expand=True, padx=10, pady=(10,0))
-		self.pathStr = StringVar()
-		self.entryPath = ttk.Entry(self.pathFrame, textvariable=self.pathStr)
-		self.entryPath.pack(fill=X, side=LEFT, expand=True, padx=5)
-		self.entryPath.config(state=DISABLED)
-		self.buttonPath = ttk.Button(self.pathFrame, text='다른경로에서 찾기', command=self.pathFunction)
-		self.buttonPath.pack(side=LEFT)
+
 		self.contentsFrame = Frame(self.mainFrame)
 		self.contentsFrame.pack(fill=BOTH, expand=True, padx=10)
 
@@ -59,10 +50,18 @@ class WindowsInstaller(Frame):
 		self.entryPath.config(state='readonly')
 		self.pathStr.set(filedialog.askopenfilename(initialdir="/", title='Select file', filetypes=(('실행 파일', '*.exe'), ('모든 파일', '*.*'))))
 
+	def search(self, dir):
+		files = os.listdir(dir)
+		for file in files:
+			fullFilename = os.path.join(dir, file)
+			if os.path.isdir(fullFilename):
+				self.filenames.append(fullFilename)
+				self.search(fullFilename)
+			else:
+				self.filenames.append(fullFilename)
+
 	def nextFunction(self):
-		self.filenames = os.listdir(os.getcwd()+'\\pkg')
 		self.pathStr.set('')
-		self.entryPath.config(state=DISABLED)
 		if self.checkFrame == 0:
 			self.buttonInstall.config(text='설치')
 			self.buttonPast.config(state=NORMAL)
@@ -73,49 +72,66 @@ class WindowsInstaller(Frame):
 			self.checkFrame = 2
 			self.warFrame()
 		elif self.checkFrame == 2:
-			self.buttonPath.config(state=DISABLED)
+			self.buttonInstall.config(text='복사')
+			self.checkFrame = 3
+			self.confFrame()
+		elif self.checkFrame == 3:
 			self.buttonInstall.config(text='실행')
 			self.buttonInstall.config(state=DISABLED)
-			self.checkFrame = 3
+			self.checkFrame = 4
 			self.buttonNext.config(text='완료')
 			self.dbFrame()
-		elif self.checkFrame == 3:
+		elif self.checkFrame == 4:
 			self.pathFrame.destroy()
 			self.buttonInstall.destroy()
+			self.buttonPast.destroy()
+			self.buttonNext.destroy()
+			self.checkFrame = 5
 			self.Percent.config(text='설치 완료')
 			self.lastFrame()
-		self.count += 1
-		self.Progress.config(value=self.count)
+		self.Progress.config(value=self.checkFrame)
 
 	def pastFunction(self):
-		self.filenames = os.listdir(os.getcwd()+'\\pkg')
 		self.pathStr.set('')
-		self.entryPath.config(state=DISABLED)
-		if self.checkFrame == 3:
-			self.buttonPath.config(state=NORMAL)
+		if self.checkFrame == 4:
 			self.buttonInstall.config(text='복사')
+			self.checkFrame = 3
+			self.buttonNext.config(text='다음')
+			self.buttonInstall.config(state=NORMAL)
+			self.confFrame()
+		elif self.checkFrame == 3:
 			self.checkFrame = 2
 			self.buttonNext.config(text='다음')
+			self.buttonInstall.config(state=NORMAL)
 			self.warFrame()
 		elif self.checkFrame == 2:
 			self.buttonInstall.config(text='설치')
 			self.checkFrame = 1
 			self.buttonNext.config(state=NORMAL)
+			self.buttonInstall.config(state=NORMAL)
 			self.tomcatFrame()
 		elif self.checkFrame == 1:
 			self.buttonInstall.config(text='설치')
 			self.buttonPast.config(state=DISABLED)
 			self.checkFrame = 0
 			self.buttonNext.config(state=NORMAL)
+			self.buttonInstall.config(state=NORMAL)
 			self.javaFrame()
-		self.count -= 1
-		self.Progress.config(value=self.count)
+		self.Progress.config(value=self.checkFrame)
 
 	def javaFrame(self):
 		self.labelMain.config(text='자바 설치')
 		self.contentsFrame.destroy()
 		self.contentsFrame = Frame(self.mainFrame)
 		self.contentsFrame.pack(fill=BOTH, expand=True, padx=10)
+		self.pathFrame = Frame(self.contentsFrame)
+		self.pathFrame.pack(fill=X, anchor=N, expand=True, padx=10, pady=(10,0))
+		self.pathStr = StringVar()
+		self.entryPath = ttk.Entry(self.pathFrame, textvariable=self.pathStr)
+		self.entryPath.pack(fill=X, side=LEFT, expand=True, padx=5)
+		self.entryPath.config(state=DISABLED)
+		self.buttonPath = ttk.Button(self.pathFrame, text='찾기', command=self.pathFunction)
+		self.buttonPath.pack(side=LEFT)
 		try:
 			self.javaCheck = True
 			checkJAVA = subprocess.check_output('REG QUERY "HKLM\\SOFTWARE\\JavaSoft" /s | findstr JavaHome', shell=True, universal_newlines=True)
@@ -128,76 +144,87 @@ class WindowsInstaller(Frame):
 					labelPath = Label(self.contentsFrame, text=path.split('    ')[-1], relief=SUNKEN, bg='gray99')
 					labelPath.pack(fill=X)
 			message = Message(self.contentsFrame, text='자바가 설치되어 있습니다.\n\n다시 설치하려면 설치버튼을 넘어가려면 다음버튼을 누르세요.', width=400)
-			message.pack(fill=X, side=LEFT)
+			message.pack(fill=X, side=LEFT, pady=40)
 		except subprocess.CalledProcessError as e:
 			self.javaCheck = False
-			message = Message(self.contentsFrame, text='자바가 설치되어 있지 않습니다.\n\n설치하려면 설치버튼을 누르세요.', width=400)
-			message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=20)
+			labelPath = Label(self.contentsFrame, text='jdk-8u191-windows-x64', relief=SUNKEN, bg='gray99')
+			labelPath.pack(fill=X)
+			message = Message(self.contentsFrame, text='자바가 설치되어 있지 않습니다.\n\n위 버전의 자바를 설치하려면 설치버튼을 누르세요.', width=400)
+			message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=40)
 
 	def tomcatFrame(self):
 		self.labelMain.config(text='톰캣 설치')
 		self.contentsFrame.destroy()
 		self.contentsFrame = Frame(self.mainFrame)
-		self.contentsFrame.pack(fill=BOTH, expand=True, padx=10, pady=10)
+		self.contentsFrame.pack(fill=BOTH, expand=True, padx=10)
+		self.pathFrame = Frame(self.contentsFrame)
+		self.pathFrame.pack(fill=X, anchor=N, expand=True, padx=10, pady=(10,0))
+		self.pathStr = StringVar()
+		self.entryPath = ttk.Entry(self.pathFrame, textvariable=self.pathStr)
+		self.entryPath.pack(fill=X, side=LEFT, expand=True, padx=5)
+		self.entryPath.config(state=DISABLED)
+		self.buttonPath = ttk.Button(self.pathFrame, text='찾기', command=self.pathFunction)
+		self.buttonPath.pack(side=LEFT)
 		try:
 			checkTomcat = subprocess.check_output('REG QUERY "HKLM\\SOFTWARE\\Apache Software Foundation" /s | findstr InstallPath', shell=True, universal_newlines=True)
-			self.tomcatPath = list()
+			# self.tomcatPath = list()
 			for service in checkTomcat.split('\n'):
 				if 'InstallPath' in service:
-					self.tomcatPath.append(service.split('    ')[-1])
+					# self.tomcatPath.append(service.split('    ')[-1])
 					labelPath = Label(self.contentsFrame, text=service.split('    ')[-1], relief=SUNKEN, bg='gray99')
 					labelPath.pack(fill=X)
 			message = Message(self.contentsFrame, text='위 경로에 톰캣이 설치되어 있습니다.\n\n새로 설치하려면 설치버튼을 넘어가려면 다음버튼을 누르세요.', width=400)
-			message.pack(fill=X, side=LEFT)
+			message.pack(fill=X, side=LEFT, pady=40)
 		except subprocess.CalledProcessError as e:
-			message = Message(self.contentsFrame, text='톰캣이 설치되어 있지 않습니다.\n\n설치하려면 설치버튼을 누르세요.', width=400)
-			message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=20)
+			labelPath = Label(self.contentsFrame, text='apache-tomcat-8.5.35', relief=SUNKEN, bg='gray99')
+			labelPath.pack(fill=X)
+			message = Message(self.contentsFrame, text='톰캣이 설치되어 있지 않습니다.\n\n위 버전의 톰캣을 설치하려면 설치버튼을 누르세요.', width=400)
+			message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=40)
 
 	def warFrame(self):
 		self.labelMain.config(text='war 파일 복사')
 		self.contentsFrame.destroy()
 		self.contentsFrame = Frame(self.mainFrame)
 		self.contentsFrame.pack(fill=BOTH, expand=True, padx=10)
-		try:
-			self.comboPath = ttk.Combobox(self.contentsFrame, values=self.tomcatPath, width=400)
-			self.comboPath.pack(fill=X)
-			self.comboPath.config(state='readonly')
-			self.comboPath.current(0)
-			message = Message(self.contentsFrame, text='위 경로의 톰캣에 war파일을 복사하시겠습니까?\n\n복사하려면 복사버튼을 누르세요.', width=400)
-			message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=20)
-		except AttributeError as e:
-			message = Message(self.contentsFrame, text='톰캣이 설치되어 있지 않습니다.\n\nwar파일을 배포하시려면 이전버튼을 눌러 톰캣을 설치해 주세요.', width=400)
-			message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=20)
+		# self.comboPath = ttk.Combobox(self.contentsFrame, values=self.tomcatPath, width=400)
+		# self.comboPath.pack(fill=X)
+		# self.comboPath.config(state='readonly')
+		# self.comboPath.current(0)
 
-	def onselect(self, evt):
-		w = evt.widget
-		if self.lastselectionList:
-			changeList = w.curselection()
-			if len(changeList) < len(self.lastselectionList):
-				for lastItem in self.lastselectionList:
-					if lastItem in changeList:
-						continue
-					self.changedSelection.remove(lastItem)
-			if len(changeList) != len(self.lastselectionList):
-				for changeItem in changeList:
-					if changeItem in self.changedSelection:
-						continue
-					self.changedSelection.append(changeItem)
-			else:
-				self.changedSelection = list(w.curselection())
-			self.lastselectionList = w.curselection()
-		else:
-			self.lastselectionList = w.curselection()
-			self.changedSelection = list(w.curselection())
-		listStr = str()
-		self.exeList = list()
-		for item in self.changedSelection:
-			self.exeList.append(w.get(int(item)))
-			listStr += (w.get(int(item)).split('\\')[-1] + '  ')
-		self.sqlList.config(text=listStr)
+		frame = Frame(self.contentsFrame)
+		frame.pack(fill=X, expand=True, padx=10, pady=(10,0))
+		self.pathSave = StringVar()
+		savePath = ttk.Entry(frame, textvariable=self.pathSave)
+		savePath.pack(fill=X, side=LEFT, expand=True, padx=5)
+		buttonPath = ttk.Button(frame, text='열기', command=self.dirPath)
+		buttonPath.pack(side=LEFT)
+		message = Message(self.contentsFrame, text='열기버튼을 눌러 war파일을 복사할 경로를 설정하고\n\n복사버튼을 누르세요.', width=400)
+		message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=40)
+
+	def dirPath(self):
+		self.pathSave.set(filedialog.askdirectory(initialdir="C:\\"))
+
+	def confFrame(self):
+		self.labelMain.config(text='conf 복사')
+		self.contentsFrame.destroy()
+		self.contentsFrame = Frame(self.mainFrame)
+		self.contentsFrame.pack(fill=BOTH, expand=True, padx=10)
+
+		frame = Frame(self.contentsFrame)
+		frame.pack(fill=X, expand=True, padx=10, pady=(10,0))
+		self.pathSave = StringVar()
+		savePath = ttk.Entry(frame, textvariable=self.pathSave)
+		savePath.pack(fill=X, side=LEFT, expand=True, padx=5)
+		buttonPath = ttk.Button(frame, text='열기', command=self.dirPath)
+		buttonPath.pack(side=LEFT)
+		message = Message(self.contentsFrame, text='열기버튼을 눌러 conf 디렉토리를 복사할 경로를 설정하고\n\n복사버튼을 누르세요.', width=400)
+		message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=40)
 
 	def dbFrame(self):
-		self.labelMain.config(text='DataBase')
+		self.DBCheck = True
+		self.filenames = list()
+		self.search(os.path.join(os.getcwd(), 'pkg'))
+		self.labelMain.config(text='Database')
 		self.contentsFrame.destroy()
 		self.contentsFrame = Frame(self.mainFrame)
 		self.contentsFrame.pack(fill=BOTH, expand=True, padx=10)
@@ -213,27 +240,104 @@ class WindowsInstaller(Frame):
 		self.buttonConnect.pack(side=LEFT, padx=(10,0))
 		self.progressState = ttk.Progressbar(frame, orient=HORIZONTAL)
 		self.progressState.pack(fill=X, anchor=S, padx=(20,0))
-		self.fileName = collections.OrderedDict()
-		self.intVar = collections.OrderedDict()
 
-		frameSQL = Frame(self.contentsFrame)
-		scrollbar = Scrollbar(frameSQL)
-		scrollbar.pack(side=RIGHT, fill=Y)
-		self.lastselectionList = list()
-		self.listboxSQL = Listbox(frameSQL, width=100, height=6, selectmode=EXTENDED)
-		self.listboxSQL.bind('<<ListboxSelect>>', self.onselect)
-		self.listboxSQL.pack(fill=X, padx=(10,0))
-		self.listboxSQL.delete(0, END)
+		labelDesc = Label(self.contentsFrame, text='패키지 목록\t\t\t\t\t실행 목록')
+		labelDesc.pack(fill=X)
+
+		listFrame = Frame(self.contentsFrame)
+		listFrame.pack(fill=X, pady=5)
+
+		frame1 = Frame(listFrame)
+		scrollbar1 = Scrollbar(frame1)
+		scrollbar1.pack(side=RIGHT, fill=Y)
+		scrollbarH1 = Scrollbar(frame1, orient=HORIZONTAL)
+		scrollbarH1.pack(side=BOTTOM, fill=X)
+		self.itemList1 = list()
 		for file in self.filenames:
 		 	if '.sql' in file:
-		 		self.listboxSQL.insert(END, os.path.join(os.getcwd()+'\\pkg\\', file))
-		self.listboxSQL.config(yscrollcommand=scrollbar.set)
-		scrollbar.config(command=self.listboxSQL.yview)
-		frameSQL.pack()
-		self.sqlList = Label(self.contentsFrame, text='')
-		self.sqlList.pack(fill=X)
-		message = Message(self.contentsFrame, text='실행하려면 실행버튼을 누르세요.', width=400)
-		message.pack(fill=X, side=LEFT, anchor=NW, padx=10)
+		 		self.itemList1.append(file.split('\\')[-1])
+		self.leftItem = StringVar(value=self.itemList1)
+		self.listbox1 = Listbox(frame1, width=35, height=6, listvariable=self.leftItem, selectmode=EXTENDED)
+		self.listbox1.pack(fill=X, padx=(10,0))
+		self.listbox1.config(yscrollcommand=scrollbar1.set)
+		self.listbox1.config(xscrollcommand=scrollbarH1.set)
+		scrollbar1.config(command=self.listbox1.yview)
+		scrollbarH1.config(command=self.listbox1.xview)
+		frame1.pack(fill=X, side=LEFT)
+
+		buttonFrame = Frame(listFrame)
+		upFrame = Frame(buttonFrame)
+		insertButton = ttk.Button(upFrame, text='등록->', width=6, command=self.insertFunction)
+		insertButton.pack(side=LEFT, padx=5, pady=5)
+		upFrame.pack(fill=X)
+		downFrame = Frame(buttonFrame)
+		removeButton = ttk.Button(downFrame, text='<-제거', width=6, command=self.removeFunction)
+		removeButton.pack(side=LEFT, padx=5, pady=5)
+		downFrame.pack(fill=X)
+		buttonFrame.pack(fill=X, side=LEFT)
+
+		frame2 = Frame(listFrame)
+		scrollbar2 = Scrollbar(frame2)
+		scrollbar2.pack(side=RIGHT, fill=Y)
+		scrollbarH2 = Scrollbar(frame2, orient=HORIZONTAL)
+		scrollbarH2.pack(side=BOTTOM, fill=X)
+		self.itemList2 = list()
+		self.rightItem = StringVar()
+		self.listbox2 = Listbox(frame2, width=35, height=6, listvariable=self.rightItem, selectmode=SINGLE)
+		self.listbox2.pack(fill=X, padx=(10,0))
+		self.listbox2.config(yscrollcommand=scrollbar2.set)
+		self.listbox2.config(xscrollcommand=scrollbarH2.set)
+		scrollbar2.config(command=self.listbox2.yview)
+		scrollbarH2.config(command=self.listbox2.xview)
+		frame2.pack(fill=X, side=LEFT)
+		message = Message(self.contentsFrame, text='실행하려면 연결정보를 입력한 후 스크립트 파일을 실행목록에 등록하고 실행버튼을 누르세요.', width=600)
+		message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=10)
+
+	def insertFunction(self):
+		try:
+			for index in self.listbox1.curselection():
+				if self.itemList1[index] in self.itemList2:
+					messagebox.showwarning('경고', '이미 실행목록에 등록되어 있는 파일입니다.')
+				else:
+					self.itemList2.append(self.itemList1[index])
+					self.rightItem.set(self.itemList2)
+
+			path = list()
+			for item in self.filenames:
+				if item.split('\\')[-1] in self.itemList2:
+					path.append(item)
+			if self.DBCheck:
+				for item in path:
+					if '00.' in item or '01.' in item:
+						pass
+					else:
+						self.configFrame()
+						self.DBCheck = False
+						break
+		except IndexError:
+			messagebox.showwarning('경고', '실행목록에 등록할 스크립트 파일을 선택하세요.')
+
+	def removeFunction(self):
+		try:
+			if self.itemList2:
+				self.itemList2.remove(self.itemList2[self.listbox2.curselection()[0]])
+				self.rightItem.set(self.itemList2)
+			else:
+				messagebox.showwarning('경고', '실행목록에 스크립트 파일이 등록되어 있지 않습니다.')
+			path = list()
+			for item in self.filenames:
+				if item.split('\\')[-1] in self.itemList2:
+					path.append(item)
+			check = True
+			for item in path:
+				if '00.' in item or '01.' in item:
+					pass
+				else:
+					check = False
+			if check:
+				self.DBCheck = True
+		except IndexError:
+			messagebox.showwarning('경고', '실행목록에서 제거할 스크립트 파일을 선택하세요.')
 
 	def connectFrame(self):
 		self.connectionWindow = Toplevel()
@@ -289,8 +393,6 @@ class WindowsInstaller(Frame):
 
 	def lastFrame(self):
 		self.labelMain.config(text='완료')
-		self.buttonPast.destroy()
-		self.buttonNext.destroy()
 		self.buttonCancel.config(text='닫기')
 		self.contentsFrame.destroy()
 		self.contentsFrame = Frame(self.mainFrame)
@@ -314,7 +416,7 @@ class WindowsInstaller(Frame):
 				self.buttonNext.config(state=NORMAL)
 				self.Percent.config(text='자바 설치 완료')
 				with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-40s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
 				self.javaFrame()
 			elif self.checkFrame == 1:
 				if self.javaCheck:
@@ -326,85 +428,204 @@ class WindowsInstaller(Frame):
 					self.buttonNext.config(state=NORMAL)
 					self.Percent.config(text='톰캣 설치 완료')
 					with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-40s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
+						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
 					self.tomcatFrame()
 				else:
-					check = messagebox.askyesno('설치', '자바가 설치되어 있지 않습니다.\n자바를 먼저 설치하시겠습니까?')
-					if check:
-						subprocess.check_call(os.getcwd() + '\\pkg\\jdk-8u191-windows-x64.exe', shell=True)
+					self.installJavaCheck = messagebox.askyesno('설치', '자바가 설치되어 있지 않습니다.\n자바를 먼저 설치하시겠습니까?')
+					if self.installJavaCheck:
 						if self.pathStr.get() == '':
 							tomcatName = os.getcwd() + '\\pkg\\apache-tomcat-8.5.35.exe'
 						else:
 							tomcatName = self.pathStr.get()
+						subprocess.check_call(os.getcwd() + '\\pkg\\jdk-8u191-windows-x64.exe', shell=True)
 						subprocess.check_call(tomcatName, shell=True)
 						self.buttonNext.config(state=NORMAL)
 						self.Percent.config(text='톰캣 설치 완료')
 						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-40s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
+							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
 						self.tomcatFrame()
 					else:
 						messagebox.showerror('실패', '톰캣을 설치하기 전 자바를 먼저 설치해 주세요.')
 			elif self.checkFrame == 2:
-				for file in self.filenames:
-					if '.war' in file:
-						if self.pathStr.get() == '':
-							warName = os.path.join(os.getcwd()+'\\pkg', file)
-						else:
-							warName = self.pathStr.get()
-						shutil.copy(warName, self.comboPath.get()+'\\webapps')
-						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-40s" % ('[' + warName.split('\\')[-1] + ']') + "%-20s" % 'war파일 복사.' + '\n')
-				self.Percent.config(text='war파일 복사 완료')
+				try:
+					for file in self.filenames:
+						self.datetime = datetime.datetime.now()
+						if '.war' in file:
+							if self.pathStr.get() == '':
+								warName = file
+							else:
+								warName = self.pathStr.get()
+							shutil.copy(warName, self.pathSave.get())
+							with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
+								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + warName.split('\\')[-1] + ']') + "%-20s" % 'war파일 복사.' + '\n')
+					self.Percent.config(text='war파일 복사 완료')
+				except FileNotFoundError:
+					messagebox.showerror('실패', '복사할 경로를 선택해 주세요.')
+
 			elif self.checkFrame == 3:
-				self.progressState.config(mode='indeterminate')
-				self.progressState.start(10)
-				if self.comboDBMS.get() == 'Oracle / Tibero':
-					self.logWindow()
-				for sqlFile in self.exeList:
+				if self.pathSave.get() != '':
+					for file in self.filenames:
+						self.datetime = datetime.datetime.now()
+						if 'conf' == file.split('\\')[-1]:
+							shutil.copytree(file, self.pathSave.get()+'\\conf')
+							self.confCheck = True
+							with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
+								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[conf]') + "%-20s" % 'conf 복사.' + '\n')
+					self.Percent.config(text='conf 복사 완료')
+				else:
+					messagebox.showerror('실패', '복사할 경로를 선택해 주세요.')
+
+			elif self.checkFrame == 4:
+				try:
+					path = list()
+					for item in self.filenames:
+						if item.split('\\')[-1] in self.itemList2:
+							path.append(item)
 					if self.comboDBMS.get() == 'Oracle / Tibero':
-						logDB = subprocess.Popen('sqlplus '+self.user+'/'+self.password+'@'+self.host+':'+self.port+'/'+self.database+' < "'+sqlFile+'"', shell=True, stdout=subprocess.PIPE)
-						try:
-							while True:
-								line = logDB.stdout.readline().rstrip().decode('cp949')
-								if line == '' and logDB.poll() is not None:
-									break
-								if line:
-									self.textLog.insert(END, line+'\n\n')
-									self.textLog.see(END)
-							self.buttonClose.config(state=NORMAL)
-							self.textLog.config(state=DISABLED)
-						except:
-							self.progressState.config(mode='determinate')
-							self.progressState.stop()
-					elif self.comboDBMS.get() == 'MySQL / MariaDB':
-						subprocess.check_output('mysql -h '+self.host+' -u '+self.user+' -P '+self.port+' -p '+self.database+' --password='+self.password+' < "'+sqlFile+'"', shell=True)
-					elif self.comboDBMS.get() == 'MS-SQL':
-						subprocess.check_output('sqlcmd -S '+self.host+','+self.port+' -i "'+sqlFile+'" -U '+self.user+' -P '+self.password+' -d '+self.database)
-					with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-40s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
-				self.progressState.config(mode='determinate')
-				self.progressState.stop()
-				self.Percent.config(text='DB 스크립트 실행 완료')
+						self.logWindow()
+						with open(os.getcwd()+'\\login.sql', 'w') as f:
+							f.write('set sqlblanklines on')
+						messageList = list()
+						logList = list()
+						lineCount = 0
+					for sqlFile in path:
+						self.datetime = datetime.datetime.now()
+						self.progressState.config(mode='indeterminate')
+						self.progressState.start(10)
+						if self.comboDBMS.get() == 'Oracle / Tibero':
+							if '00.' in sqlFile.split('\\')[-1] or '01.' in sqlFile.split('\\')[-1]:
+								logDB = subprocess.Popen('sqlplus '+self.user+'/'+self.password+'@'+self.host+':'+self.port+'/'+self.database+' < "'+sqlFile+'"', shell=True, stdout=subprocess.PIPE)
+							else:
+								logDB = subprocess.Popen('sqlplus '+self.dbuser+'/'+self.dbpw+'@'+self.host+':'+self.port+'/'+self.database+' < "'+sqlFile+'"', shell=True, stdout=subprocess.PIPE)
+							try:
+								count = 0
+								while True:
+									line = logDB.stdout.readline().rstrip().decode('cp949')
+									if line == '' and logDB.poll() is not None:
+										break
+									if line:
+										lineCount += 1
+										if 'ERROR' in line:
+											count += 1
+										self.textLog.insert(END, line+'\n\n')
+										self.textLog.see(END)
+								if count > 0:
+									messageList.append(sqlFile.split('\\')[-1] + '에서 ' + str(count) + '개의 에러가 발생했습니다.')
+							except:
+								self.progressState.config(mode='determinate')
+								self.progressState.stop()
+								self.logWindowFrame.destroy()
+						elif self.comboDBMS.get() == 'MySQL / MariaDB':
+							subprocess.check_output('mysql -h '+self.host+' -u '+self.user+' -P '+self.port+' -p '+self.database+' --password='+self.password+' < "'+sqlFile+'"', shell=True)
+						elif self.comboDBMS.get() == 'MS-SQL':
+							subprocess.check_output('sqlcmd -S '+self.host+','+self.port+' -i "'+sqlFile+'" -U '+self.user+' -P '+self.password+' -d '+self.database)
+						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
+							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
+					self.logWindowFrame.lift()
+					self.buttonClose.config(state=NORMAL)
+					self.textLog.config(state=DISABLED)
+					self.progressState.config(mode='determinate')
+					self.progressState.stop()
+					self.Percent.config(text='DB 스크립트 실행 완료')
+					oneLine = str()
+					for msg in messageList:
+						oneLine += msg
+						if msg != messageList:
+							oneLine += '\n'
+					if oneLine != '':
+						messagebox.showerror('실패', oneLine)
+					# if self.confCheck:
+					# 	self.configFrame()
+					if lineCount != 0:
+						logList.append(self.textLog.get('1.0', END))
+					oneLog = str()
+					for log in logList:
+						oneLog += (log + '\n\n')
+					with open(os.getcwd()+'\\log\\result_log.txt', 'w') as f:
+						f.write(oneLog)
+					self.itemList2 = list()
+					self.rightItem.set(self.itemList2)
+				except AttributeError:
+					messagebox.showwarning('경고', '실행시킬 스크립트 파일을 선택하세요.')
+					self.progressState.config(mode='determinate')
+					self.progressState.stop()
+		except FileExistsError:
+			self.progressState.config(mode='determinate')
+			self.progressState.stop()
+			shutil.rmtree(self.pathSave.get()+'\\conf')
+			self.installThread()
 		except subprocess.CalledProcessError as e:
-			if self.checkFrame == 3:
+			self.datetime = datetime.datetime.now()
+			if self.checkFrame == 4:
 				self.progressState.config(mode='determinate')
 				self.progressState.stop()
 				messagebox.showerror('실패', '스크립트 파일 실행을 정상적으로 완료하지 못했습니다.\n다시 실행하려면 실행버튼을 눌러주세요.')
 				with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-40s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행 실패.' + '\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행 실패.' + '\n')
 			else:
 				messagebox.showerror('실패', '설치를 정상적으로 완료하지 못했습니다.\n다시 설치하려면 설치버튼을 눌러주세요.')
 				if self.checkFrame == 0:
 					with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-40s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치 실패.' + '\n')
+						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치 실패.' + '\n')
 				elif self.checkFrame == 1:
+					if self.installJavaCheck:
+						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
+							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[jdk-8u191-windows-x64.exe]') + "%-20s" % '자바 설치 실패.' + '\n')
 					with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-40s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치 실패.' + '\n')
+						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-70s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치 실패.' + '\n')
+
+	def configFrame(self):
+		self.confWindow = Toplevel()
+		self.confWindow.title('Conf')
+		self.confWindow.geometry('200x140+200+200')
+		self.confWindow.resizable(False, False)
+
+		frame_C1 = Frame(self.confWindow)
+		frame_C1.pack(fill=X, padx=10, pady=(10,0))
+		labelAddr = Label(frame_C1, text='USER')
+		labelAddr.pack(side=LEFT, padx=5, pady=10)
+		self.dbuserEntry = ttk.Entry(frame_C1, width=15)
+		self.dbuserEntry.pack(side=RIGHT, expand=False, padx=(0,5))
+
+	# User info.
+		frameC2 = Frame(self.confWindow)
+		frameC2.pack(fill=X, padx=10)
+		labelID = Label(frameC2, text='PW')
+		labelID.pack(side=LEFT, padx=5, pady=10)
+		self.dbpwEntry = ttk.Entry(frameC2, width=15)
+		self.dbpwEntry.pack(side=RIGHT, expand=False, padx=(0,5))
+
+	# Connect button.
+		frameC3 = Frame(self.confWindow)
+		frameC3.pack(fill=X, padx=10)
+		buttonConnectSave = ttk.Button(frameC3, text='입력 완료', width=21, command=self.configFunction)
+		buttonConnectSave.pack(side=RIGHT, padx=5)
+
+	def configFunction(self):
+		self.dbuser = self.dbuserEntry.get()
+		self.dbpw = self.dbpwEntry.get()
+		if self.confCheck:
+			count = 0
+			stringFile = str()
+			with open(self.pathSave.get()+'\\conf\\jdbc.conf', 'r', encoding='UTF8') as f:
+				while True:
+					line = f.readline()
+					count += 1
+					if not line: break
+					if count in [14, 15, 16, 17, 18, 19]:
+						if count == 14:
+							stringFile += 'dbtype=oracle\ndbaddr=' + self.host + '\ndbport=' + self.port + '\nsid=' + self.database + '\ndbuser=' + self.dbuser + '\ndbpwd=' + self.dbpw + '\n'
+						continue
+					else:
+						stringFile += line
+			with open(self.pathSave.get()+'\\conf\\jdbc.conf', 'w', encoding='UTF8') as f:
+				f.write(stringFile)
+		self.confWindow.destroy()
 
 	def logWindow(self):
 		self.logWindowFrame = Toplevel()
 		self.logWindowFrame.title('DataBase')
-		self.logWindowFrame.geometry('600x400+200+200')
+		self.logWindowFrame.geometry('600x400+755+100')
 		self.logWindowFrame.resizable(False, False)
 		label = Label(self.logWindowFrame, text='진행상황')
 		label.pack(anchor=NW, padx=5, pady=10)
@@ -423,7 +644,7 @@ class WindowsInstaller(Frame):
 	def mainLog(self):
 		logWindow = Toplevel()
 		logWindow.title('Log')
-		logWindow.geometry('700x400+200+200')
+		logWindow.geometry('900x400+200+200')
 		logWindow.resizable(False, False)
 
 		frame_log = Frame(logWindow)
@@ -603,7 +824,6 @@ class LinuxInstaller():
 
 	def End(self):
 		print('프로그램을 종료합니다.')
-		# exit()
 
 def main():
 # Create window.
