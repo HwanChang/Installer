@@ -3,7 +3,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 import tkinter.font
-import threading, collections, subprocess, os, sys, shutil, datetime, platform
+import threading, subprocess, os, shutil, datetime, platform
 
 class WindowsInstaller(Frame):
 	def __init__(self, master):
@@ -20,8 +20,12 @@ class WindowsInstaller(Frame):
 
 		remainFrame = Frame(self)
 		remainFrame.pack(fill=X, anchor=S, padx=10, pady=(0,10))
-		self.buttonInstall = ttk.Button(remainFrame, text='설치', command=self.installThread)
-		self.buttonInstall.pack(anchor=NE, padx=10, pady=(0,20))
+
+		self.setFrame = Frame(remainFrame)
+		self.setFrame.pack(fill=X)
+		self.buttonInstall = ttk.Button(self.setFrame, text='설치', command=self.installThread)
+		self.buttonInstall.pack(side=RIGHT, padx=10, pady=(0,20))
+
 		self.Progress = ttk.Progressbar(remainFrame, orient=HORIZONTAL, mode='determinate')
 		self.Progress.pack(fill=X, anchor=S, padx=20)
 		self.Progress.config(maximum=5)
@@ -44,6 +48,8 @@ class WindowsInstaller(Frame):
 		self.contentsFrame.pack(fill=BOTH, expand=True, padx=10)
 
 		self.checkFrame = 0
+		if not(os.path.isdir(os.getcwd()+'\\log')):
+			os.makedirs(os.path.join(os.getcwd(), 'log'))
 		self.javaFrame()
 
 	def pathFunction(self):
@@ -68,14 +74,20 @@ class WindowsInstaller(Frame):
 			self.checkFrame = 1
 			self.tomcatFrame()
 		elif self.checkFrame == 1:
+			self.copyStr = StringVar()
+			self.entryCopy = ttk.Entry(self.setFrame, textvariable=self.copyStr)
+			self.entryCopy.pack(fill=X, side=LEFT, padx=10, pady=(0,20), expand=True)
+			self.entryCopy.config(state=DISABLED)
 			self.buttonInstall.config(text='복사')
 			self.checkFrame = 2
 			self.warFrame()
 		elif self.checkFrame == 2:
+			self.copyStr.set('')
 			self.buttonInstall.config(text='복사')
 			self.checkFrame = 3
 			self.confFrame()
 		elif self.checkFrame == 3:
+			self.entryCopy.destroy()
 			self.buttonInstall.config(text='실행')
 			self.buttonInstall.config(state=DISABLED)
 			self.checkFrame = 4
@@ -94,17 +106,23 @@ class WindowsInstaller(Frame):
 	def pastFunction(self):
 		self.pathStr.set('')
 		if self.checkFrame == 4:
+			self.copyStr = StringVar()
+			self.entryCopy = ttk.Entry(self.setFrame, textvariable=self.copyStr)
+			self.entryCopy.pack(fill=X, side=LEFT, padx=10, pady=(0,20), expand=True)
+			self.entryCopy.config(state=DISABLED)
 			self.buttonInstall.config(text='복사')
 			self.checkFrame = 3
 			self.buttonNext.config(text='다음')
 			self.buttonInstall.config(state=NORMAL)
 			self.confFrame()
 		elif self.checkFrame == 3:
+			self.copyStr.set('')
 			self.checkFrame = 2
 			self.buttonNext.config(text='다음')
 			self.buttonInstall.config(state=NORMAL)
 			self.warFrame()
 		elif self.checkFrame == 2:
+			self.entryCopy.destroy()
 			self.buttonInstall.config(text='설치')
 			self.checkFrame = 1
 			self.buttonNext.config(state=NORMAL)
@@ -147,7 +165,7 @@ class WindowsInstaller(Frame):
 			message.pack(fill=X, side=LEFT, pady=40)
 		except subprocess.CalledProcessError as e:
 			self.javaCheck = False
-			labelPath = Label(self.contentsFrame, text='jdk-8u191-windows-x64', relief=SUNKEN, bg='gray99')
+			labelPath = Label(self.contentsFrame, text='java-1.8.0-openjdk-1.8.0.191-1.b12.ojdkbuild.windows.x86_64.msi', relief=SUNKEN, bg='gray99')
 			labelPath.pack(fill=X)
 			message = Message(self.contentsFrame, text='자바가 설치되어 있지 않습니다.\n\n위 버전의 자바를 설치하려면 설치버튼을 누르세요.', width=400)
 			message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=40)
@@ -176,7 +194,7 @@ class WindowsInstaller(Frame):
 			message = Message(self.contentsFrame, text='위 경로에 톰캣이 설치되어 있습니다.\n\n새로 설치하려면 설치버튼을 넘어가려면 다음버튼을 누르세요.', width=400)
 			message.pack(fill=X, side=LEFT, pady=40)
 		except subprocess.CalledProcessError as e:
-			labelPath = Label(self.contentsFrame, text='apache-tomcat-8.5.35', relief=SUNKEN, bg='gray99')
+			labelPath = Label(self.contentsFrame, text='apache-tomcat-8.5.35.exe', relief=SUNKEN, bg='gray99')
 			labelPath.pack(fill=X)
 			message = Message(self.contentsFrame, text='톰캣이 설치되어 있지 않습니다.\n\n위 버전의 톰캣을 설치하려면 설치버튼을 누르세요.', width=400)
 			message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=40)
@@ -202,7 +220,9 @@ class WindowsInstaller(Frame):
 		message.pack(fill=X, side=LEFT, anchor=NW, padx=10, pady=40)
 
 	def dirPath(self):
-		self.pathSave.set(filedialog.askdirectory(initialdir="C:\\"))
+		path = filedialog.askdirectory(initialdir="C:\\")
+		self.pathSave.set(path)
+		self.copyStr.set(path)
 
 	def confFrame(self):
 		self.labelMain.config(text='conf 복사')
@@ -343,7 +363,7 @@ class WindowsInstaller(Frame):
 	def connectFrame(self):
 		self.connectionWindow = Toplevel()
 		self.connectionWindow.title('DB Connection')
-		self.connectionWindow.geometry('580x140+200+200')
+		self.connectionWindow.geometry('580x130+200+200')
 		self.connectionWindow.resizable(False, False)
 
 		frame_C1 = Frame(self.connectionWindow)
@@ -407,17 +427,16 @@ class WindowsInstaller(Frame):
 
 	def installFunction(self):
 		try:
-			self.datetime = datetime.datetime.now()
 			if self.checkFrame == 0:
 				if self.pathStr.get() == '':
-					javaName = os.getcwd() + '\\pkg\\jdk-8u191-windows-x64.exe'
+					javaName = os.getcwd() + '\\pkg\\java-1.8.0-openjdk-1.8.0.191-1.b12.ojdkbuild.windows.x86_64.msi'
 				else:
 					javaName = self.pathStr.get()
 				subprocess.check_call(javaName, shell=True)
 				self.buttonNext.config(state=NORMAL)
 				self.Percent.config(text='자바 설치 완료')
 				with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
+					f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
 				self.javaFrame()
 			elif self.checkFrame == 1:
 				if self.javaCheck:
@@ -429,7 +448,7 @@ class WindowsInstaller(Frame):
 					self.buttonNext.config(state=NORMAL)
 					self.Percent.config(text='톰캣 설치 완료')
 					with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
+						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
 					self.tomcatFrame()
 				else:
 					self.installJavaCheck = messagebox.askyesno('설치', '자바가 설치되어 있지 않습니다.\n자바를 먼저 설치하시겠습니까?')
@@ -438,19 +457,18 @@ class WindowsInstaller(Frame):
 							tomcatName = os.getcwd() + '\\pkg\\apache-tomcat-8.5.35.exe'
 						else:
 							tomcatName = self.pathStr.get()
-						subprocess.check_call(os.getcwd() + '\\pkg\\jdk-8u191-windows-x64.exe', shell=True)
+						subprocess.check_call(os.getcwd() + '\\pkg\\java-1.8.0-openjdk-1.8.0.191-1.b12.ojdkbuild.windows.x86_64.msi', shell=True)
 						subprocess.check_call(tomcatName, shell=True)
 						self.buttonNext.config(state=NORMAL)
 						self.Percent.config(text='톰캣 설치 완료')
 						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
+							f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
 						self.tomcatFrame()
 					else:
 						messagebox.showerror('실패', '톰캣을 설치하기 전 자바를 먼저 설치해 주세요.')
 			elif self.checkFrame == 2:
 				try:
 					for file in self.filenames:
-						self.datetime = datetime.datetime.now()
 						if '.war' in file:
 							if self.pathStr.get() == '':
 								warName = file
@@ -458,7 +476,7 @@ class WindowsInstaller(Frame):
 								warName = self.pathStr.get()
 							shutil.copy(warName, self.pathSave.get())
 							with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + warName.split('\\')[-1] + ']') + "%-20s" % 'war파일 복사.' + '\n')
+								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + warName.split('\\')[-1] + ']') + "%-20s" % 'war파일 복사.' + '\n')
 					self.Percent.config(text='war파일 복사 완료')
 				except FileNotFoundError:
 					messagebox.showerror('실패', '복사할 경로를 선택해 주세요.')
@@ -466,12 +484,11 @@ class WindowsInstaller(Frame):
 			elif self.checkFrame == 3:
 				if self.pathSave.get() != '':
 					for file in self.filenames:
-						self.datetime = datetime.datetime.now()
 						if 'conf' == file.split('\\')[-1]:
 							shutil.copytree(file, self.pathSave.get()+'\\conf')
 							self.confCheck = True
 							with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[conf]') + "%-20s" % 'conf 복사.' + '\n')
+								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[conf]') + "%-20s" % 'conf 복사.' + '\n')
 					self.Percent.config(text='conf 복사 완료')
 				else:
 					messagebox.showerror('실패', '복사할 경로를 선택해 주세요.')
@@ -490,7 +507,6 @@ class WindowsInstaller(Frame):
 						logList = list()
 						lineCount = 0
 					for sqlFile in path:
-						self.datetime = datetime.datetime.now()
 						self.progressState.config(mode='indeterminate')
 						self.progressState.start(10)
 						if self.comboDBMS.get() == 'Oracle / Tibero':
@@ -521,7 +537,7 @@ class WindowsInstaller(Frame):
 						elif self.comboDBMS.get() == 'MS-SQL':
 							subprocess.check_output('sqlcmd -S '+self.host+','+self.port+' -i "'+sqlFile+'" -U '+self.user+' -P '+self.password+' -d '+self.database)
 						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
+							f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
 					self.logWindowFrame.lift()
 					self.buttonClose.config(state=NORMAL)
 					self.textLog.config(state=DISABLED)
@@ -540,10 +556,11 @@ class WindowsInstaller(Frame):
 					oneLog = str()
 					for log in logList:
 						oneLog += (log + '\n\n')
-					with open(os.getcwd()+'\\log\\result_log.txt', 'w') as f:
+					with open(os.getcwd()+'\\log\\DB_log.txt', 'w') as f:
 						f.write(oneLog)
 					self.itemList2 = list()
 					self.rightItem.set(self.itemList2)
+					os.remove(os.getcwd()+'\\login.sql')
 				except AttributeError:
 					messagebox.showwarning('경고', '실행시킬 스크립트 파일을 선택하세요.')
 					self.progressState.config(mode='determinate')
@@ -554,28 +571,27 @@ class WindowsInstaller(Frame):
 			shutil.rmtree(self.pathSave.get()+'\\conf')
 			self.installThread()
 		except subprocess.CalledProcessError as e:
-			self.datetime = datetime.datetime.now()
 			if self.checkFrame == 4:
 				self.progressState.config(mode='determinate')
 				self.progressState.stop()
 				messagebox.showerror('실패', '스크립트 파일 실행을 정상적으로 완료하지 못했습니다.\n다시 실행하려면 실행버튼을 눌러주세요.')
 				with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행 실패.' + '\n')
+					f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + sqlFile.split('\\')[-1] + ']') + "%-20s" % 'DB스크립트 실행 실패.' + '\n')
 			else:
 				messagebox.showerror('실패', '설치를 정상적으로 완료하지 못했습니다.\n다시 설치하려면 설치버튼을 눌러주세요.')
 				if self.checkFrame == 0:
 					with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-						f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치 실패.' + '\n')
+						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + javaName.split('\\')[-1] + ']') + "%-20s" % '자바 설치 실패.' + '\n')
 				elif self.checkFrame == 1:
 					try:
 						if self.installJavaCheck:
 							with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-								f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[jdk-8u191-windows-x64.exe]') + "%-20s" % '자바 설치 실패.' + '\n')
+								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[java-1.8.0-openjdk-1.8.0.191-1.b12.ojdkbuild.windows.x86_64.msi]') + "%-20s" % '자바 설치 실패.' + '\n')
 						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치 실패.' + '\n')
+							f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치 실패.' + '\n')
 					except AttributeError:
 						with open(os.getcwd()+'\\log\\log.txt', 'a') as f:
-							f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치 실패.' + '\n')
+							f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + tomcatName.split('\\')[-1] + ']') + "%-20s" % '톰캣 설치 실패.' + '\n')
 
 	def userThread(self):
 		for item in self.filenames:
@@ -677,7 +693,7 @@ class LinuxInstaller():
 					except subprocess.CalledProcessError as e:
 						print('자바가 이미 설치되어 있습니다.')
 					with open(os.getcwd()+'/log/log.txt', 'a') as f:
-						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[/usr/local/' + fullpath.split('/')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
+						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[/usr/local/' + fullpath.split('/')[-1] + ']') + "%-20s" % '자바 설치.' + '\n')
 					self.Tomcat()
 		elif checkJava == 'N':
 			self.Tomcat()
@@ -711,7 +727,7 @@ class LinuxInstaller():
 						subprocess.check_call('rm -rf ' + os.path.join(os.getcwd(), 'apache-tomcat*'), shell=True)
 						print('톰캣이 이미 설치되어 있습니다.')
 					with open(os.getcwd()+'/log/log.txt', 'a') as f:
-						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[/usr/local/' + fullpath.split('/')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
+						f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[/usr/local/' + fullpath.split('/')[-1] + ']') + "%-20s" % '톰캣 설치.' + '\n')
 					self.War()
 			except subprocess.CalledProcessError as e:
 				print('자바를 먼저 설치하세요.')
@@ -735,7 +751,7 @@ class LinuxInstaller():
 					if '.war' in file:
 						shutil.copy(os.path.join(os.getcwd()+'/pkg', file), '/usr/local/apache-tomcat-8.5.35/webapps')
 						with open(os.getcwd()+'/log/log.txt', 'a') as f:
-							f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[/usr/local/apache-tomcat-8.5.35/webapps/' + file + ']') + "%-20s" % 'war파일 복사.' + '\n')
+							f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[/usr/local/apache-tomcat-8.5.35/webapps/' + file + ']') + "%-20s" % 'war파일 복사.' + '\n')
 				self.Database()
 		elif checkWar == 'N':
 			self.Database()
@@ -766,7 +782,7 @@ class LinuxInstaller():
 						try:
 							subprocess.check_call('sqlplus '+user+'/'+password+'@'+host+':'+port+'/'+database+' < "'+sqlFile+'"', shell=True)
 							with open(os.getcwd()+'/log/log.txt', 'a') as f:
-								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + sqlFile + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
+								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + sqlFile + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
 						except subprocess.CalledProcessError as e:
 							print('파일명을 정확히 입력하세요.')
 					break
@@ -790,7 +806,7 @@ class LinuxInstaller():
 							elif checkDBMS == 'MSSQL':
 								subprocess.check_call('sqlcmd -S '+host+','+port+' -i "'+sqlFile+'" -U '+user+' -P '+password+' -d '+database)
 							with open(os.getcwd()+'/log/log.txt', 'a') as f:
-								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-65s" % ('[' + sqlFile + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
+								f.write(datetime.datetime.now().strftime('[ %Y-%m-%d %H:%M:%S ]\t\t') + "%-75s" % ('[' + sqlFile + ']') + "%-20s" % 'DB스크립트 실행.' + '\n')
 						except subprocess.CalledProcessError as e:
 							print('파일명을 정확히 입력하세요.')
 					break
